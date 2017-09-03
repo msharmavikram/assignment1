@@ -1,1 +1,0 @@
-build/ARM/gem5.fast --outdir=a1core2modcache_fft configs/example/se.py -n 2 --cpu-type=TimingSimpleCPU -c fft -o '-m16 -p2'

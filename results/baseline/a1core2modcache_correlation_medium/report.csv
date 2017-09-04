@@ -1,0 +1,47 @@
+sim_seconds                             ,    1.774765                    ,  # Number of seconds simulated
+sim_ticks                               ,1774765304500                   ,   # Number of ticks simulated
+sim_insts                               ,  1489469295                    ,  # Number of instructions simulated
+sim_ops                                 ,  1630928138                    ,  # Number of ops (including micro ops) simulated
+host_inst_rate                          ,     1803064                    ,  # Simulator instruction rate (inst/s)
+system.cpu0.numCycles                   ,  3549530609                    ,  # number of cpu cycles simulated
+system.cpu1.numCycles                   ,           0                    ,  # number of cpu cycles simulated
+system.cpu0.committedInsts              ,  1489469295                    ,  # Number of instructions committed
+system.cpu1.committedInsts              ,           0                    ,  # Number of instructions committed
+system.cpu0.committedOps                ,  1630928138                    ,  # Number of ops (including micro ops) committed
+system.cpu1.committedOps                ,           0                    ,  # Number of ops (including micro ops) committed
+system.cpu0.dcache.overall_hits::total  ,   263056212                    ,  # number of overall hits
+system.cpu0.dcache.overall_misses::total,     1332710                    ,  # number of overall misses
+system.l2.overall_hits::total           ,     1317500                    ,  # number of overall hits
+system.l2.overall_misses::total         ,       15602                    ,  # number of overall misses
+system.cpu0.dcache.writebacks::writebacks,     1331059                   ,   # number of writebacks
+system.cpu0.dcache.writebacks::total     ,    1331059                    ,  # number of writebacks
+system.cpu0.icache.writebacks::writebacks,          52                   ,   # number of writebacks
+system.cpu0.icache.writebacks::total     ,         52                    ,  # number of writebacks
+system.l2.WritebackDirty_hits::writebacks,     1331059                   ,   # number of WritebackDirty hits
+system.l2.WritebackDirty_hits::total     ,    1331059                    ,  # number of WritebackDirty hits
+system.l2.WritebackClean_hits::writebacks,          50                   ,   # number of WritebackClean hits
+system.l2.WritebackClean_hits::total     ,         50                    ,  # number of WritebackClean hits
+system.l2.WritebackDirty_accesses::writebacks,     1331059               ,       # number of WritebackDirty accesses(hits+misses)
+system.l2.WritebackDirty_accesses::total     ,1331059                    ,  # number of WritebackDirty accesses(hits+misses)
+system.l2.WritebackClean_accesses::writebacks,          50               ,       # number of WritebackClean accesses(hits+misses)
+system.l2.WritebackClean_accesses::total     ,     50                    ,  # number of WritebackClean accesses(hits+misses)
+*********Additional data************
+system.mem_ctrls.avgRdBW                ,        0.56                    ,  # Average DRAM read bandwidth in MiByte/s
+system.mem_ctrls.avgRdBWSys             ,        0.56                    ,  # Average system read bandwidth in MiByte/s
+system.mem_ctrls.avgWrBW                ,        0.00                    ,  # Average achieved write bandwidth in MiByte/s
+system.mem_ctrls.avgWrBWSys             ,        0.00                    ,  # Average system write bandwidth in MiByte/s
+system.mem_ctrls.peakBW                 ,    12800.00                    ,  # Theoretical peak bandwidth in MiByte/s
+system.mem_ctrls.pageHitRate            ,       19.64                    ,  # Row buffer hit rate, read and write combined
+system.mem_ctrls.bytes_read::cpu0.inst  ,       23168                    ,  # Number of bytes read from this memory
+system.mem_ctrls.bytes_read::cpu0.data  ,      975360                    ,  # Number of bytes read from this memory
+system.cpu0.num_int_insts               ,  1517906878                    ,  # number of integer instructions
+system.cpu1.num_int_insts               ,           0                    ,  # number of integer instructions
+system.cpu0.num_fp_insts                ,          16                    ,  # number of float instructions
+system.cpu1.num_fp_insts                ,           0                    ,  # number of float instructions
+system.cpu0.num_vec_insts               ,           0                    ,  # number of vector instructions
+system.cpu1.num_vec_insts               ,           0                    ,  # number of vector instructions
+system.cpu0.Branches                    ,   184790607                    ,  # Number of branches fetched
+system.cpu0.dcache.ReadReq_hits::total  ,   175959427                    ,  # number of ReadReq hits
+system.cpu0.dcache.WriteReq_hits::total ,    87096785                    ,  # number of WriteReq hits
+system.cpu0.dcache.ReadReq_misses::total,     1292383                    ,  # number of ReadReq misses
+system.cpu0.dcache.WriteReq_misses::total,       40327                   ,   # number of WriteReq misses

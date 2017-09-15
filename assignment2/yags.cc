@@ -39,13 +39,14 @@
 
 //All the paremeter values are taken from build/ARM/ folder. This is not from the bi_mode.hh. 
 // Constructor for YagsBP
-YagsBP::YagsBP(const Params *params)
-    : BPredUnit(params), instShiftAmt(params->instShiftAmt),
+    //: BPredUnit(params), instShiftAmt(params->instShiftAmt),
+YagsBP::YagsBP(const YagsBPParams *params)
+    : BPredUnit(params), 
       globalHistoryReg(params->numThreads,0),//FIXME - support no of threass.
       globalHistoryBits(ceilLog2(params->globalPredictorSize)),
       choicePredictorSize(params->choicePredictorSize),
       choiceCtrBits(params->choiceCtrBits),
-      globalPredictorSize(params->globalPredictorSize ),
+      globalPredictorSize(params->globalPredictorSize),
       globalCtrBits(params->globalCtrBits)
 {
     if(!isPowerOf2(choicePredictorSize))
@@ -64,14 +65,13 @@ YagsBP::YagsBP(const Params *params)
     initCache();
     
     //set up the mask for indexing from branch address
-    globalHistoryMask       = mask(globalHistoryBits);
+    historyRegisterMask = mask(globalHistoryBits);
     choiceHistoryMask       = choicePredictorSize - 1;
     globalHistoryMask       = globalPredictorSize - 1;
-    // unsed mask will be used to generate tags. 
+    // unsed mask will be used to generate tags. Although this is 0, if i need to change later to add a different tag, this additional variable has been added.  
     globalHistoryUnusedMask = globalHistoryMask - globalHistoryMask;
     
     printf("globalHistoryBits is %u\n",globalHistoryBits);
-    printf("globalHistoryMask is %08x\n",globalHistoryMask);
     printf("globalHistoryMask is %08x\n",globalHistoryMask);
     printf("globalHistoryUnusedMask is %08x\n",globalHistoryUnusedMask);
     //set up the threshold for branch prediction
@@ -107,7 +107,7 @@ YagsBP::uncondBranch(ThreadID tid, Addr pc, void * &bpHistory)
 
 // Actions for an squash . Nothing to be done. 
 void
-BiModeBP::squash(ThreadID tid, void *bpHistory)
+YagsBP::squash(ThreadID tid, void *bpHistory)
 {
     BPHistory *history = static_cast<BPHistory*>(bpHistory);
     globalHistoryReg[tid] = history->globalHistoryReg;
@@ -130,7 +130,7 @@ YagsBP::lookup(ThreadID tid,Addr branchAddr, void * &bpHistory)
        assert(globalPredictorIdx < globalPredictorSize);
 
         //create tag with tag mask and whatever was remaining in global history register - use unusedmask for the same. Concept - Cache tag creation     
-        uint32_t tag = ((branchAddr >> instShiftAmt) & tagsMask) | ((globalHistoryReg & globalHistoryUnusedMask) );
+        uint32_t tag = ((branchAddr >> instShiftAmt) & tagsMask) | ((globalHistoryReg[tid] & globalHistoryUnusedMask) );
       //Create history register to know what was previous state. This is needed for update phase to figure out which actions to take 
         history->globalHistoryReg = globalHistoryReg[tid];
        
@@ -179,21 +179,21 @@ YagsBP::lookup(ThreadID tid,Addr branchAddr, void * &bpHistory)
 }
 
 // BTB Update actions
-void
-YagsBP::btbUpdate(Addr branchAddr, void * &bpHistory)
+void 
+YagsBP::btbUpdate(ThreadID tid, Addr branchAddr, void * &bpHistory)
 {
-    globalHistoryReg &= (globalHistoryMask & ~ULL(1));
+    globalHistoryReg[tid] &= (historyRegisterMask & ~ULL(1));
 }
 
 // Update data structures after getting actual decison 
 void
-YagsBP::update(Addr branchAddr, bool taken, void *bpHistory, bool squashed)
+YagsBP::update(ThreadID tid, Addr branchAddr, bool taken, void *bpHistory, bool squashed)
 {
     assert(bpHistory);
     
     BPHistory *history = static_cast<BPHistory *>(bpHistory);
     if(squashed){
-       globalHistoryReg = (history->globalHistoryReg << 1) | taken;
+       globalHistoryReg[tid] = (history->globalHistoryReg << 1) | taken;
        return;
     }
     //indexing into either takenPredictor or notTakenPredictor
@@ -203,7 +203,7 @@ YagsBP::update(Addr branchAddr, bool taken, void *bpHistory, bool squashed)
     assert(choiceCountersIdx < choicePredictorSize);
     assert(globalPredictorIdx < globalPredictorSize);
     //create tag with tag mask and whatever was remaining in global history register - use unusedmask for the same. Concept - Cache tag creation     
-    uint32_t tag = ((branchAddr >> instShiftAmt) & tagsMask) | ((globalHistoryReg & globalHistoryUnusedMask) );
+    uint32_t tag = ((branchAddr >> instShiftAmt) & tagsMask) | ((globalHistoryReg[tid] & globalHistoryUnusedMask) );
     
     switch(history->takenUsed)
     {
@@ -232,7 +232,7 @@ YagsBP::update(Addr branchAddr, bool taken, void *bpHistory, bool squashed)
             break;
         case 1:// Taken cache used. Choice says - check not taken.  
             if((history->takenPred == taken) && (!taken) == false)
-                 //Keep the choice counter same. Dont change in this scenario.However update the taken cache.  
+            {}     //Keep the choice counter same. Dont change in this scenario.However update the taken cache.  
             else{
                 if(taken)
                     choiceCounters[choiceCountersIdx].increment();
@@ -243,7 +243,7 @@ YagsBP::update(Addr branchAddr, bool taken, void *bpHistory, bool squashed)
             break;
         case 2:// Taken cache used. Choice says - check not taken.  
             if((history->notTakenPred==taken) && (!taken) == true)
-                 //Keep the choice counter same. Dont change in this scenario.However update the not taken cache.  
+            {}     //Keep the choice counter same. Dont change in this scenario.However update the not taken cache.  
             else{
                 if(taken)
                     choiceCounters[choiceCountersIdx].increment();
@@ -258,7 +258,8 @@ YagsBP::update(Addr branchAddr, bool taken, void *bpHistory, bool squashed)
 }
 
 //  Global History Registor Update 
-BiModeBP::updateGlobalHistReg(ThreadID tid, bool taken)
+void
+YagsBP::updateGlobalHistReg(ThreadID tid, bool taken)
 {
     globalHistoryReg[tid] = taken ? (globalHistoryReg[tid] << 1) | 1 :
                                (globalHistoryReg[tid] << 1);
@@ -328,4 +329,15 @@ void YagsBP::initCache()
         notTakenCounters[count].tag  = 0;
     }
     printf("Cache initilization complete\n");
+}
+unsigned
+YagsBP::getGHR(ThreadID tid, void *bp_history) const
+{
+    return static_cast<BPHistory*>(bp_history)->globalHistoryReg;
+}
+
+YagsBP*
+YagsBPParams::create()
+{
+    return new YagsBP(this);
 }

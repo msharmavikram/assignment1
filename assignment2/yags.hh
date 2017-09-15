@@ -33,6 +33,7 @@
 
 #include "cpu/pred/bpred_unit.hh"
 #include "cpu/pred/sat_counter.hh"
+#include "params/YagsBP.hh" // This file does not exit. 
 
 /*
  * Feel free to make any modifications, this is a skeleton code
@@ -46,29 +47,26 @@
 class YagsBP : public BPredUnit
 {
   public:
-    YagsBP(const Params *params);
-    void uncondBranch(void * &bp_history);
-    void squash(void *bp_history);
-    bool lookup(Addr branch_addr, void * &bp_history);
-    void btbUpdate(Addr branch_addr, void * &bp_history);
-    void update(Addr branch_addr, bool taken, void *bp_history, bool squashed);
-
+    YagsBP(const YagsBPParams *params);
+    void uncondBranch(ThreadID tid, Addr pc, void * &bp_history);
+    void squash(ThreadID tid, void *bp_history);
+    bool lookup(ThreadID tid, Addr branch_addr, void * &bp_history);
+    void btbUpdate(ThreadID tid, Addr branch_addr, void * &bp_history);
+    void update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
+                bool squashed);
+    unsigned getGHR(ThreadID tid, void *bp_history) const;
   private:
-    void updateGlobalHistReg(bool taken);
+    void updateGlobalHistReg(ThreadID tid, bool taken);
 
     //init cache
     void initCache();
 
     //return true means hit, false means miss
-    bool lookupTakenCache(const unsigned idx,const uint32_t tag, bool *taken);
-    bool lookupNotTakenCache(const unsigned idx,const uint32_t tag, bool *taken);
+    bool checkTakenCache(const unsigned idx,const uint32_t tag, bool *taken);
+    bool checkNotTakenCache(const unsigned idx,const uint32_t tag, bool *taken);
     
-
     void updateTakenCache(const unsigned idx, const uint32_t tag,const bool taken);
     void updateNotTakenCache(const unsigned idx, const uint32_t tag,const bool taken);
-
-    void updateTakenCacheLRU(const unsigned idx, const uint8_t entry_idx);
-    void updateNotTakenCacheLRU(const unsigned idx, const uint8_t entry_idx);
 
     struct BPHistory {
         unsigned globalHistoryReg;
@@ -95,8 +93,6 @@ class YagsBP : public BPredUnit
     {
         SatCounter ctr;
         uint32_t tag;
-//        uint8_t LRU;//FIXME
-//        uint8_t used; //FIXME
     };
 
     // choice predictors
@@ -106,21 +102,18 @@ class YagsBP : public BPredUnit
     // not-taken direction predictors
     std::vector<LocalCache> notTakenCounters;
 
-    unsigned instShiftAmt;
-
-    unsigned globalHistoryReg;
+    std::vector<unsigned> globalHistoryReg;
     unsigned globalHistoryBits;
-    unsigned globalHistoryMask;
     unsigned globalHistoryUnusedMask;
 
     unsigned choicePredictorSize;
     unsigned choiceCtrBits;
-    unsigned choicePredictorMask;
-
+    unsigned choiceHistoryMask;
     unsigned globalPredictorSize;
     unsigned globalCtrBits;
-    unsigned globalPredictorMask;
+    unsigned globalHistoryMask;
 
+    unsigned historyRegisterMask;
     unsigned choiceThreshold;
     unsigned globalPredictorThreshold;
 

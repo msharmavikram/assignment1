@@ -59,35 +59,35 @@ class Perceptron : public BPredUnit
     void updateGlobalHistReg(ThreadID tid, bool taken);
 
     struct BPHistory {
-        unsigned globalHistoryReg;
+        uint64_t globalHistoryReg;
         signed finalPred;
     };
 
-    std::vector<unsigned> globalHistoryReg;
+    std::vector<uint64_t> globalHistoryReg;
     unsigned globalHistoryBits;//globalhistory register size. 
 
     unsigned historyRegisterMask;
     unsigned globalPredictorSize;
+    unsigned historyLength;
     unsigned globalCtrBits;
     unsigned globalHistoryMask;
     unsigned choicePredictorSize;
     unsigned choiceCtrBits;
-    unsigned choiceHistoryMask;
     static const int nperceptrons =14 ;// currently the global predictor size is 8k
-    unsigned theta = (1.93*globalHistoryBits+14);//this number is from paper. 
+    //unsigned theta = (1.93*globalPredictorSize+14);//this number is from paper. 
+    unsigned theta = 128;//this number is from paper. 
     unsigned weightsize = 8;//in bits. 1 for sign and 7 for value. Assignment needs 6 bits. Taken 7 as of now. May reduce later. FIXME
     unsigned start_history_index = 0;
+    unsigned historyBits= 9;
     
-    int ptable[nperceptrons] = {1};// only first w_0 is assigned to 1 as per paper
     //int weights[nperceptrons][globalHistoryBits] = {{0}};
-    std::vector<std::vector<signed>> weights = {{0}};
+    std::vector<std::vector<signed>> weights = {{1}};
      
     //Creating an array of history as the gem5 flexibility to create is tedious. Hence creating a circular buffer for history 
-    //int hist[globalPredictorSize] = {-1};     
     std::vector<signed> hist = {-1};     
  
     inline int updateHIdx(int i) const {
-      return (i + start_history_index) % globalHistoryBits;
+      return (i + start_history_index) % historyBits;
     }
 };
 

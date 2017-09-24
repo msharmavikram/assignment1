@@ -28,35 +28,26 @@
  * Authors: Anthony Gutierrez
  */
 
-
-/********************* COPIED FROM BI-MODE *********************/
-
-#ifndef __CPU_PRED_GSHARE_HH__
-#define __CPU_PRED_GSHARE_HH__
+#ifndef __CPU_PRED_YAGS_PRED_HH__
+#define __CPU_PRED_YAGS_PRED_HH__
 
 #include "cpu/pred/bpred_unit.hh"
 #include "cpu/pred/sat_counter.hh"
-#include "params/Gshare.hh" // This file does not exit. 
+#include "params/YagsBP.hh" // This file does not exit. 
 
-/**
- * Implements a bi-mode branch predictor. The bi-mode predictor is a two-level
- * branch predictor that has three seprate history arrays: a taken array, a
- * not-taken array, and a choice array. The taken/not-taken arrays are indexed
- * by a hash of the PC and the global history. The choice array is indexed by
- * the PC only. Because the taken/not-taken arrays use the same index, they
- * must
- * be the same size.
- *
- * The bi-mode branch predictor aims to eliminate the destructive aliasing that
- * occurs when two branches of opposite biases share the same global history
- * pattern. By separating the predictors into taken/not-taken arrays, and using
- * the branch's PC to choose between the two, destructive aliasing is reduced.
+/*
+ * Feel free to make any modifications, this is a skeleton code
+ * to get you started.
+ * Note: Do not change name of class
  */
 
-class Gshare : public BPredUnit
+
+ #define YAGS_TAG_LEN 8
+
+class YagsBP : public BPredUnit
 {
   public:
-    Gshare(const GshareParams *params);
+    YagsBP(const YagsBPParams *params);
     void uncondBranch(ThreadID tid, Addr pc, void * &bp_history);
     void squash(ThreadID tid, void *bp_history);
     bool lookup(ThreadID tid, Addr branch_addr, void * &bp_history);
@@ -64,52 +55,70 @@ class Gshare : public BPredUnit
     void update(ThreadID tid, Addr branch_addr, bool taken, void *bp_history,
                 bool squashed);
     unsigned getGHR(ThreadID tid, void *bp_history) const;
-
   private:
     void updateGlobalHistReg(ThreadID tid, bool taken);
+
+    //init cache
+    void initCache();
+
+    //return true means hit, false means miss
+    bool checkTakenCache(const unsigned idx,const uint32_t tag, bool *taken);
+    bool checkNotTakenCache(const unsigned idx,const uint32_t tag, bool *taken);
+    
+    void updateTakenCache(const unsigned idx, const uint32_t tag,const bool taken);
+    void updateNotTakenCache(const unsigned idx, const uint32_t tag,const bool taken);
 
     struct BPHistory {
         unsigned globalHistoryReg;
         // was the taken array's prediction used?
-        // true: takenPred used
-        // false: notPred used
- //       bool takenUsed;
- //       // prediction of the taken array
- //       // true: predict taken
- //       // false: predict not-taken
- //       bool takenPred;
- //       // prediction of the not-taken array
- //       // true: predict taken
- //       // false: predict not-taken
- //       bool notTakenPred;
+        // 0: choice Predictor used
+        // 1: takenPred used
+        // 2: notPred used
+        uint8_t takenUsed;
+        // prediction of the taken array
+        // true: predict taken
+        // false: predict not-taken
+        bool takenPred;
+        // prediction of the not-taken array
+        // true: predict taken
+        // false: predict not-taken
+        bool notTakenPred;
         // the final taken/not-taken prediction
         // true: predict taken
         // false: predict not-taken
-        bool finalPred;
+        bool finalPrediction;
+    };
+
+    struct LocalCache
+    {
+        SatCounter ctr;
+        uint32_t tag;
     };
 
     // choice predictors
-    std::vector<SatCounter> gshareCounters;
+    std::vector<SatCounter> choiceCounters;
     // taken direction predictors
- //   std::vector<SatCounter> takenCounters;
- //   // not-taken direction predictors
- //   std::vector<SatCounter> notTakenCounters;
+    std::vector<LocalCache> takenCounters;
+    // not-taken direction predictors
+    std::vector<LocalCache> notTakenCounters;
 
     std::vector<unsigned> globalHistoryReg;
     unsigned globalHistoryBits;
-    unsigned historyRegisterMask;
+    unsigned globalHistoryUnusedMask;
 
     unsigned choicePredictorSize;
     unsigned choiceCtrBits;
     unsigned choiceHistoryMask;
-//FIXME:
     unsigned globalPredictorSize;
+    unsigned cacheSize;
     unsigned globalCtrBits;
     unsigned globalHistoryMask;
 
+    unsigned historyRegisterMask;
     unsigned choiceThreshold;
- //   unsigned takenThreshold;
- //   unsigned notTakenThreshold;
+    unsigned globalPredictorThreshold;
+
+    unsigned tagsMask;
 };
 
-#endif // __CPU_PRED_BI_MODE_PRED_HH__
+#endif // __CPU_PRED_YAGS_PRED_HH__

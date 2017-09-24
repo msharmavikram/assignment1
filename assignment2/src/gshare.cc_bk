@@ -42,44 +42,30 @@
 #include "base/intmath.hh"
 //FIXME:instShiftAmt
 Gshare::Gshare(const GshareParams *params)
-    : BPredUnit(params),
+    : BPredUnit(params),instShiftAmt(params->instShiftAmt),
       globalHistoryReg(params->numThreads, 0),
-      //globalHistoryBits(ceilLog2(params->globalPredictorSize)),
-      globalHistoryBits(ceilLog2(params->choicePredictorSize)),
-      choicePredictorSize(params->choicePredictorSize),
-      choiceCtrBits(params->choiceCtrBits),
-      globalPredictorSize(params->globalPredictorSize),//FIXME
-      globalCtrBits(params->globalCtrBits)//FIXME
+      globalHistoryBits(ceilLog2(params->localPredictorSize)),
+      localPredictorSize(params->localPredictorSize),
+      localCtrBits(params->localCtrBits) 
 {
-    if (!isPowerOf2(choicePredictorSize))
-        fatal("Invalid choice predictor size.\n");
-    if (!isPowerOf2(globalPredictorSize))//FIXME
-        fatal("Invalid global history predictor size.\n");
+    if (!isPowerOf2(localPredictorSize))
+        fatal("Invalid local predictor size.\n");
 
-    gshareCounters.resize(choicePredictorSize);
-//    takenCounters.resize(globalPredictorSize);
-//    notTakenCounters.resize(globalPredictorSize);
+    localCounters.resize(localPredictorSize);
 
-    for (int i = 0; i < choicePredictorSize; ++i) {
-        gshareCounters[i].setBits(choiceCtrBits);
+    for (int i = 0; i < localPredictorSize; ++i) {
+        localCounters[i].setBits(localCtrBits);
     }
-//    for (int i = 0; i < globalPredictorSize; ++i) {
-//        takenCounters[i].setBits(globalCtrBits);
-//        notTakenCounters[i].setBits(globalCtrBits);
-//    }
 
     historyRegisterMask = mask(globalHistoryBits);
-    choiceHistoryMask = choicePredictorSize - 1;
-//    globalHistoryMask = globalPredictorSize - 1;
+    localHistoryMask = localPredictorSize - 1;
 
-    choiceThreshold = (ULL(1) << (choiceCtrBits - 1)) - 1;
-//    takenThreshold = (ULL(1) << (choiceCtrBits - 1)) - 1;
-//    notTakenThreshold = (ULL(1) << (choiceCtrBits - 1)) - 1;
+    localThreshold = (ULL(1) << (localCtrBits - 1)) - 1;
 }
 
 /*
  * For an unconditional branch we set its history such that
- * everything is set to taken. I.e., its choice predictor
+ * everything is set to taken. I.e., its local predictor
  * chooses the taken array and the taken array predicts taken.
  */
 void
@@ -87,9 +73,6 @@ Gshare::uncondBranch(ThreadID tid, Addr pc, void * &bpHistory)
 {
     BPHistory *history = new BPHistory;
     history->globalHistoryReg = globalHistoryReg[tid];
-//    history->takenUsed = true;
-//    history->takenPred = true;
-//    history->notTakenPred = true;
     history->finalPred = true;
     bpHistory = static_cast<void*>(history);
     updateGlobalHistReg(tid, true);
@@ -107,46 +90,27 @@ Gshare::squash(ThreadID tid, void *bpHistory)
 /*
  * Here we lookup the actual branch prediction. We use the PC to
  * identify the bias of a particular branch, which is based on the
- * prediction in the choice array. A hash of the global history
+ * prediction in the local array. A hash of the global history
  * register and a branch's PC is used to index into both the taken
  * and not-taken predictors, which both present a prediction. The
- * choice array's prediction is used to select between the two
+ * local array's prediction is used to select between the two
  * direction predictors for the final branch prediction.
  */
 bool
 Gshare::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
 {
- //   unsigned choiceHistoryIdx = ((branchAddr >> instShiftAmt)
- //                               & choiceHistoryMask);
-    unsigned choiceHistoryIdx = (((branchAddr >> instShiftAmt)
-                                ^ globalHistoryReg[tid])
-                                & choiceHistoryMask);
+    unsigned localHistoryIdx = (((branchAddr >> instShiftAmt) ^ globalHistoryReg[tid]) & localHistoryMask);
 
-    assert(choiceHistoryIdx < choicePredictorSize);
-//    assert(choiceHistoryIdx < globalPredictorSize);
+    assert(localHistoryIdx < localPredictorSize);
 
-    //bool choicePrediction = gshareCounters[choiceHistoryIdx].read()
-    bool choicePrediction = gshareCounters[choiceHistoryIdx].read()
-                            > choiceThreshold;
-//    bool takenGHBPrediction = takenCounters[choiceHistoryIdx].read()
-//                              > takenThreshold;
-//    bool notTakenGHBPrediction = notTakenCounters[choiceHistoryIdx].read()
-//                                 > notTakenThreshold;
+    bool localPrediction = localCounters[localHistoryIdx].read()
+                            > localThreshold;
     bool finalPrediction;
 
     BPHistory *history = new BPHistory;
     history->globalHistoryReg = globalHistoryReg[tid];
- //   history->takenUsed = choicePrediction;
-//    history->takenPred = takenGHBPrediction;
-//    history->notTakenPred = notTakenGHBPrediction;
 
-//    if (choicePrediction) {
-//        finalPrediction = takenGHBPrediction;
-//    } else {
-//        finalPrediction = notTakenGHBPrediction;
-//    }
-
-    finalPrediction = choicePrediction;
+    finalPrediction = localPrediction;
     history->finalPred = finalPrediction;
     bpHistory = static_cast<void*>(history);
     updateGlobalHistReg(tid, finalPrediction);
@@ -161,9 +125,9 @@ Gshare::btbUpdate(ThreadID tid, Addr branchAddr, void * &bpHistory)
 }
 
 /* Only the selected direction predictor will be updated with the final
- * outcome; the status of the unselected one will not be altered. The choice
+ * outcome; the status of the unselected one will not be altered. The local
  * predictor is always updated with the branch outcome, except when the
- * choice is opposite to the branch outcome but the selected counter of
+ * local is opposite to the branch outcome but the selected counter of
  * the direction predictors makes a correct final prediction.
  */
 void
@@ -183,18 +147,14 @@ Gshare::update(ThreadID tid, Addr branchAddr, bool taken, void *bpHistory,
     else {
         delete history;
     }
-    unsigned choiceHistoryIdx = (((branchAddr >> instShiftAmt)
-                                ^ history->globalHistoryReg)
-                                & choiceHistoryMask);
-
-    assert(choiceHistoryIdx < choicePredictorSize);
+    unsigned localHistoryIdx = (((branchAddr >> instShiftAmt) ^ globalHistoryReg[tid]) & localHistoryMask);
+    
+    assert(localHistoryIdx < localPredictorSize);
 
     if (taken) {
-        //gshareCounters[choiceHistoryIdx].increment();
-        gshareCounters[choiceHistoryIdx].increment();
+        localCounters[localHistoryIdx].increment();
     } else {
-        //gshareCounters[choiceHistoryIdx].decrement();
-        gshareCounters[choiceHistoryIdx].decrement();
+        localCounters[localHistoryIdx].decrement();
     }
 
 }

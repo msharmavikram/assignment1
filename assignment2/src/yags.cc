@@ -46,6 +46,7 @@ YagsBP::YagsBP(const YagsBPParams *params)
       globalHistoryBits(ceilLog2(params->globalPredictorSize)),
       choicePredictorSize(params->choicePredictorSize),
       choiceCtrBits(params->choiceCtrBits),
+      cacheSize(params->cacheSize),
       globalPredictorSize(params->globalPredictorSize),
       globalCtrBits(params->globalCtrBits)
 {
@@ -57,8 +58,8 @@ YagsBP::YagsBP(const YagsBPParams *params)
     //implement bimode 
     //size of these counters  = global predictor size.
     choiceCounters.resize(choicePredictorSize);
-    takenCounters.resize(globalPredictorSize);
-    notTakenCounters.resize(globalPredictorSize);
+    takenCounters.resize(cacheSize);
+    notTakenCounters.resize(cacheSize);
 
     //initilize the counter's values
     // Adding tags and used flags for init. 
@@ -321,7 +322,7 @@ void YagsBP::initCache()
     {
         choiceCounters[count].setBits(choiceCtrBits);
     }
-    for(uint32_t count = 0; count < globalPredictorSize; count++)
+    for(uint32_t count = 0; count < cacheSize; count++)
     {
         takenCounters[count].ctr.setBits(globalCtrBits);
         notTakenCounters[count].ctr.setBits(globalCtrBits);

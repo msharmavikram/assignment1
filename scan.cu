@@ -54,15 +54,15 @@ __global__ void scan(float *input, float *output, float *intermediate, int len) 
   if( idx <len) 
 	  sharedMem[threadIdx.x] = input[idx];
   else 
-	  sharedMem[threadIdx.x] = 0;
+	  sharedMem[threadIdx.x] = 0.0;
   if( idx+ BLOCK_SIZE <len) 
 	  sharedMem[threadIdx.x+ BLOCK_SIZE] = input[idx+ BLOCK_SIZE];
   else 
-	  sharedMem[threadIdx.x+BLOCK_SIZE]  = 0;
+	  sharedMem[threadIdx.x+BLOCK_SIZE]  = 0.0;
 	  
   __syncthreads(); //sync all inputs
   //forward path  
-  for (unsigned int stride = 1; stride <= BLOCK_SIZE stride *=2){
+  for (unsigned int stride = 1; stride <= BLOCK_SIZE;stride *=2){
 	int index = (threadIdx.x+1) * 2* stride -1; 
 	if( index < 2*BLOCK_SIZE) 
 		sharedMem[index] += sharedMem[index-stride]; 
@@ -71,17 +71,17 @@ __global__ void scan(float *input, float *output, float *intermediate, int len) 
   
   //backward path -- reduction
   for (unsigned int stride = BLOCK_SIZE/2; stride >0 ; stride /=2){
-	  int index = (threadIdx.x + 1)*stride*2 -1;
-	  if(index + stride < 2* BLOCK_SIZE)
-		  sharedMem[index+stride] += sharedMem[index];
-	  __syncthreads();//wait until previous compute are over. 
+	int index = (threadIdx.x + 1)*stride*2 -1;
+	if(index + stride < 2* BLOCK_SIZE)
+	        sharedMem[index+stride] += sharedMem[index];
+	__syncthreads();//wait until previous compute are over. 
   }
   
   if(idx <len) output[idx] = sharedMem[threadIdx.x];
   if(idx+ BLOCK_SIZE < len) output[idx+BLOCK_SIZE] = sharedMem[threadIdx.x + BLOCK_SIZE];
   
   //if its first kernel then do add data to intermediate stage 
-  if(intermediate !=NULL && idx ==0) 
+  if(intermediate !=NULL && threadIdx.x ==0) 
 	  intermediate[blockIdx.x] = sharedMem[2*BLOCK_SIZE-1];
   
 }
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
   cudaDeviceSynchronize();
   //second kernel is same as scan but over aggregated sum of the first results. 
   // second kernel is one block only and it should write anything out.
-  scan<<<dim3(1,1,1), dimBlock>>>(devicek2Input, devicek2Output, NULL, numElements);
+  scan<<<dim3(1,1,1), dimBlock>>>(devicek2Input, devicek2Output, NULL, BLOCK_SIZE*2);
   cudaDeviceSynchronize();
   //third kernel adder of each results. 
   // Half of the elements in the deviceOutput are done compute. 

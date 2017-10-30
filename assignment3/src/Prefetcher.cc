@@ -223,7 +223,8 @@ Prefetcher::issueNextPrefetch(Addr address, PrefetchEntry *stream)
     }
 
     // extend this prefetching stream by 1 (or more)
-    for(int l = 0; l < PFWIDTH; l++) {  
+    int l=0;
+    //for(int l = 0; l < PFWIDTH; l++) {  
         bool dummy; 
         Addr page_addr = pageAddress(stream->m_address);
         Addr line_addr = insertmarkovaddress(stream->m_address, l, m_unit_filter_hit, dummy); //FIXME - access the 2D Markov table. search for the missaddr. If hit, Convert the stream of data to multiple address in an array. Assign them to m_arrat in correct format. if miss, add entry to the 2D markov table by replacing the least recently used. 
@@ -244,7 +245,7 @@ Prefetcher::issueNextPrefetch(Addr address, PrefetchEntry *stream)
         stream->m_use_time = m_controller->curCycle();
         DPRINTF(RubyPrefetcher, "Requesting prefetch for %#x\n", line_addr);
         m_controller->enqueuePrefetch(line_addr, stream->m_type);
-     }
+     //}
 }
 
 uint32_t
@@ -285,8 +286,9 @@ Prefetcher::initializeStream(Addr address,int stride, uint32_t index, const Ruby
     Addr line_addr = makeLineAddress(mystream->m_address);
 
     // insert a number of prefetches into the prefetch table
-    for (int k = 0; k < m_num_startup_pfs; k++) {//4 
-      for(int l = 0; l < PFWIDTH; l++) {  
+    for (int k = 0; k < m_num_startup_pfs; k++) {//4
+       int l=0; 
+    //  for(int l = 0; l < PFWIDTH; l++) {  
         bool dummy;  
         line_addr = insertmarkovaddress(line_addr, l, m_unit_filter_hit, dummy); //FIXME - access the 2D Markov table. search for the missaddr. If hit, Convert the stream of data to multiple address in an array. Assign them to m_arrat in correct format. if miss, add entry to the 2D markov table by replacing the least recently used. 
         // possibly stop prefetching at page boundaries
@@ -303,7 +305,7 @@ Prefetcher::initializeStream(Addr address,int stride, uint32_t index, const Ruby
         numPrefetchRequested++;
         DPRINTF(RubyPrefetcher, "Requesting prefetch for %#x\n", line_addr);
         m_controller->enqueuePrefetch(line_addr, m_array[index].m_type);
-      }
+     // }
     }  
    
     // update the address to be the last address prefetched
@@ -346,8 +348,8 @@ bool Prefetcher::scanMarkov(Addr line_addr, uint32_t &index, bool &alloc, uint32
     // enter this address in the table
     //update the table. 
     int local_index = index;
-    int l;
-    for(l = 0; l < PFWIDTH; l++) {  
+    int l =0;
+ //   for(l = 0; l < PFWIDTH; l++) {  
          line_addr = insertmarkovaddress(line_addr, l, filter_hit, alloc); //FIXME - access the 2D Markov table. search for the missaddr. If hit, Convert the stream of data to multiple address in an array. Assign them to m_arrat in correct format. if miss, add entry to the 2D markov table by replacing the least recently used. 
           
          //DPRINTF(RubyPrefetcher, "insert markov called in scanmarkov with  localindex %d and addr  %#x\n",l, line_addr);
@@ -367,7 +369,7 @@ bool Prefetcher::scanMarkov(Addr line_addr, uint32_t &index, bool &alloc, uint32
                   DPRINTF(RubyPrefetcher, "reset local_index %d\n", local_index);
               }
         }
-    }
+   // }
    index = local_index;
    return false; //missAddr is not found in the table.  
 }

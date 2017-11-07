@@ -1,3 +1,0 @@
-Modified Caches 
-n = 2 
-2 benchmarks - fft -m16 -p2 and correlation_medium

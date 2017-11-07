@@ -1,2 +1,0 @@
-build/ARM/gem5.fast --outdir=a1f8core2L512cacheL32MB_correlation_medium configs/example/se.py -n 2 --cpu-type=TimingSimpleCPU --num_cluster=2 --l2cache --l3cache  --caches -c /home/vsm2/Downloads/correlation_medium
-build/ARM/gem5.fast --outdir=a1f8core2L512cacheL32MB_fft configs/example/se.py -n 2 --cpu-type=TimingSimpleCPU --num_cluster=2 --l2cache --l3cache  --caches -c /home/vsm2/Downloads/fft -o '-m16 -p8'

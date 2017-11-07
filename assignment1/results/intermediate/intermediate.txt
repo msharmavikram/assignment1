@@ -1,4 +1,0 @@
-L3 shared cache added - default sizes
-dual core - 2 L2 caches
-benchmarks - fft and correlation_medium 
-

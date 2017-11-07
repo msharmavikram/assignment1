@@ -1,5 +1,0 @@
-8 core 
-L3 shared cache -2MB
-2 L2 shared cache - 512kB each 
-CPU type -TimingSimpleCPU
-2 benchmarks - fft and correlation_medium 
